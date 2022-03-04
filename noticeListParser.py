@@ -16,6 +16,9 @@ class NoticeListParser:
     __maxAge = 21
     __minAge = 19
     
+    # 법안번호의 최대길이
+    __billNoLen = 7
+    
     def __init__(self) -> None:
         #http urls
         self.base_url = 'https://pal.assembly.go.kr'          #국회 입법예고 홈페이지 URL
@@ -89,7 +92,7 @@ class NoticeListParser:
         
         return max(pageVal);
     
-    def getListValue(self, pgNum=1, isClosed=0):
+    def getListValue(self, pgNum=1, isClosed=0, age=__maxAge):
         if(isClosed == 0 ) :
             html = self.getProceedNotice(pgNum=pgNum);
         elif(isClosed == 1) :
@@ -98,39 +101,51 @@ class NoticeListParser:
         if(html == 0) :
             return 0;
         
-        test = html.find_all('tr');
+        #table td 하위 태그 중 class 값이 left 혹은 center인 값 검색
+        #tblAttrs = html.find_all('tr');
+        tblAttrs = html.find_all('td', {'class': re.compile('left|center')});
         
-        result = []
-        for item in test :
-            result.append(str(item));
-            print(str(item))   ;
-            print('###############')
-        #print(result);
+        toStrList = []
+        for item in tblAttrs :
+            toStrList.append(str(item));
         
-        test2 = []
-        for item in result :
-            tmp = re.findall('getRead\(\'[\w]*',item);
+        #bill_id parsing
+        billId = []
+        billNum = []
+        committee = []
+        commentNum = []
+        for item in toStrList :
+            tmp_id = re.findall(r'getRead\(\'[\w]*',item);
+            tmpNum = re.findall(r'\d+', item);
             
-            if(len(tmp)) :
-                test2.append(tmp[0]);
+            #html tag안의 title값 검색
+            tmpTitle = re.findall(r'title\=\"[\w+]*', item);    
             
-        print(test2)
-        
-        # billInfo = html.find_all('td', {'class': re.compile('left|center')});
-        
-        # tableList = []
-        # for item in billInfo: 
-        #     tmp = str(item);
-        #     itemTxt = str(item.text);
-        #     tableList.append(tmp);
+            #_getRead('[bill_id]') 형태의 값을 찾기 때문에, findall에서 빈배열 반환 이경우 len(list)으로 걸러줌..
+            if(len(tmp_id)) :
+                billId.append(re.findall(r'(\w+)\'?', tmp_id[0])[1]);
             
-        # for i in tableList:
-        #     print(i);
-        
-        return ;
+            #소속 위원회 필터링
+            if(len(tmpTitle)) :
+                tmp = (re.findall(r'\"(\w+위원회)', tmpTitle[0]));
+                if(len(tmp)) :
+                    committee.append(tmp[0]);
+            
+            #태그 한줄당 숫자값을 가져올 경우 법안번호와 의견수는 숫자 배열 길이가 1, 그 외는 0 이거나 잡다한 값이 아주 많음
+            if(len(tmpNum) == 1) :
+                number = tmpNum[0];
+                #법안 번호 조건이 아닐경우 의견수가 됨.
+                if(len(number)==self.__billNoLen and number[0:2] == str(age)) :
+                    billNum.append(number);
+                else :
+                    commentNum.append(number);
+                    
+        return {'bill_no': billNum, 'bill_id': billId, 'opinion_cnt': commentNum, 'committee': committee}
 
 #module test
 if __name__ == '__main__' :
     test = NoticeListParser();
     
-    test.getListValue(pgNum=2);
+    result = test.getListValue(pgNum=2, isClosed=1);
+    
+    print(('bill_no: {bill_no}').format(bill_no = result['bill_no']));
