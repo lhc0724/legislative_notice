@@ -1,18 +1,18 @@
 from bs4 import BeautifulSoup
-from noticeListParser import NoticeListParser
+import crawler
 
 import pymysql
 
-dbP2S = pymysql.connect(
-    user='root',
-    passwd='metrix',
-    host='123.214.171.162',
-    db='PAC',
-    charset='utf8'
-)
+# dbP2S = pymysql.connect(
+#     user='root',
+#     passwd='metrix',
+#     host='123.214.171.162',
+#     db='PAC',
+#     charset='utf8'
+# )
 
 def main() :
-    notices = NoticeListParser();
+    notices = crawler.NoticeListParser();
 
     proc_maxPg = notices.getLastPage(0);
     end_maxPg = notices.getLastPage(1);

@@ -1,4 +1,3 @@
-from xml.dom.minidom import TypeInfo
 import requests
 from bs4 import BeautifulSoup
 import re
