@@ -1,4 +1,3 @@
-from sqlite3 import Cursor
 import pymysql
 from dotenv import load_dotenv;
 import os
@@ -33,9 +32,11 @@ class db_config:
         # return cursor;
 
     #datas attr type (list in dict): [{'key' : 'data'} ... ] 
-    def insert_value(self, datas) :
+    def insert_list(self, datas) -> bool:
         conn = self.connect_db();
         cursor = conn.cursor(pymysql.cursors.DictCursor);
+        
+        isSuccess = True
         
         if(len(datas)) :
             sqlcmd = (
@@ -48,10 +49,18 @@ class db_config:
         try :    
             cursor.executemany(sqlcmd, datas);
             conn.commit();
+        except:
+            isSuccess = False;
         finally:
             conn.close();
             
-        return ;
+        return isSuccess;
+
+    def insert_opinionCnt(self, datas) -> bool :
+        # agreeCnt = 0;
+        # oppositCnt = 0;
+        
+        return True;
 
 if __name__ == '__main__' :
     

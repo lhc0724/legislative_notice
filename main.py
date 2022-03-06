@@ -13,7 +13,7 @@ def main() :
         return ;
     
     for i in range(1, proc_maxPg+1) :
-        conf.insert_value(notices.getListValue(i));
+        conf.insert_list(notices.getListValue(i));
     
     return ;
 

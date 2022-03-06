@@ -164,9 +164,12 @@ class NoticeListParser:
     
     def getOpinionCnt(self, pgNum=1, age=__maxAge, bill_id='', isClosed=False):
         
-        params = { self.qs_suggId: bill_id, self.qs_age: age, self.qs_page: pgNum};
+        #현재 법안의 찬/반 카운트 변수
+        agreeCnt = 0;
+        oppositCnt = 0;
         
-        #print(params);
+        #http post request params
+        params = { self.qs_suggId: bill_id, self.qs_age: age, self.qs_page: pgNum};
         
         if(isClosed) :
             res = requests.post(self.endSugg_url, params=params);  
