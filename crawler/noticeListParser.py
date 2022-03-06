@@ -19,15 +19,21 @@ class NoticeListParser:
     __billNoLen = 7
     
     def __init__(self) -> None:
-        #http urls
+        #http urls (main List)
         self.base_url = 'https://pal.assembly.go.kr'          #국회 입법예고 홈페이지 URL
         self.proc_url = self.base_url + "/law/listView.do"    #진행중인 입법예고 리스트 URL
         self.end_url = self.base_url + "/law/endListView.do"  #종료된 입법예고 리스트 URL
+        
+        #http urls (suggestion List)
+        self.sugg_url = '/suggestion'
+        self.procSugg_url = self.base_url + self.sugg_url + '/listView.do'
+        self.endSugg_url = self.base_url + self.sugg_url + '/listEndView.do'
+        
         #http url query string params
         self.qs_page = 'pageNo'                     
         self.qs_isClosed = 'closedCondition'
         self.qs_age = 'age'
-        
+        self.qs_suggId = 'lgsltpaId'
         
     #현재 진행중인 입법예고 리스트 가져오기, default page=1
     def getProceedNotice(self, pgNum=1):
@@ -91,14 +97,14 @@ class NoticeListParser:
         
         return max(pageVal);
     
-    def getListValue(self, pgNum=1, isClosed=0, age=__maxAge):
+    def getListValue(self, pgNum=1, isClosed=0, age=__maxAge) -> list:
         if(isClosed == 0 ) :
             html = self.getProceedNotice(pgNum=pgNum);
         elif(isClosed == 1) :
             html = self.getEndNotice(pgNum=pgNum);
         
         if(html == 0) :
-            return 0;
+            return [];
         
         #table td 하위 태그 중 class 값이 left 혹은 center인 값 검색
         #tblAttrs = html.find_all('tr');
@@ -138,13 +144,63 @@ class NoticeListParser:
                     billNum.append(number);
                 else :
                     commentNum.append(number);
-                    
-        return {'bill_no': billNum, 'bill_id': billId, 'opinion_cnt': commentNum, 'committee': committee}
+        
+        resList = []
+        for i in range(0,len(billId)) :
+            try :
+                resList.append(
+                {   
+                    'bill_id': billId[i],
+                    'bill_no': billNum[i], 
+                    'committee': committee[i],
+                    'status': not(isClosed),
+                    'cmnt_cnt': commentNum[i]
+                });
+            # list length가 달라 크롤링이 제대로 안된 경우.
+            except IndexError as err: 
+                print(err);
+        return resList
+    
+    
+    def getOpinionCnt(self, pgNum=1, age=__maxAge, bill_id='', isClosed=False):
+        
+        params = { self.qs_suggId: bill_id, self.qs_age: age, self.qs_page: pgNum};
+        
+        #print(params);
+        
+        if(isClosed) :
+            res = requests.post(self.endSugg_url, params=params);  
+        else :
+            res = requests.post(self.procSugg_url, params=params);  
+        
+        if(res.status_code == 200) :
+            soup = BeautifulSoup(res.content, 'html.parser');
+        else:
+            print(res.status_code);
+            return 0;
+        
+        
+        #현재 게시판의 의견 테이블 마지막 페이지 크롤링
+        pagesTag = soup.find_all("a", {'href' : re.compile('javascript-*')});
+        pgVals = []
+        
+        # 가져온 태그들 내에서 탐색
+        for item in pagesTag : 
+            tmp = str(item) #객체를 string으로 변환
+            #정규식으로 괄호 안의 숫자만 가져옴
+            pgVals.append([int(s) for s in re.findall(r'\(([^)]+)', tmp)][0]);
+            
+        maxPg = max(pgVals);    #마지막 페이지값
 
+        tblAttrs = soup.find_all('td', {'class': re.compile('left')});
+        print(tblAttrs);
+        
+        return soup;
+    
+        
 #module test
 if __name__ == '__main__' :
     test = NoticeListParser();
     
-    result = test.getListValue(pgNum=2, isClosed=1);
+    result = test.getOpinionCnt(pgNum=1, isClosed=True, bill_id='PRC_O2Z2A0Y2S1E4Q1F1Y5U4L3H1S1B6B1');
     
-    print(('bill_no: {bill_no}').format(bill_no = result['bill_no']));

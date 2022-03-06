@@ -1,26 +1,66 @@
+from sqlite3 import Cursor
 import pymysql
+from dotenv import load_dotenv;
+import os
 
-dbP2S = pymysql.connect(
-    user='root',
-    passwd='metrix',
-    host='123.214.171.162',
-    db='PAC',
-    charset='utf8'
-)
+class db_config:
+    def __init__(self) -> None: 
+        load_dotenv()
+        self.config = {
+            'user':os.environ.get('DB_USER'),
+            'db':os.environ.get('DB_NAME'),
+            'port':os.environ.get('DB_PORT'),
+            'passwd':os.environ.get('DB_PW'),
+            'host':os.environ.get('DB_HOST'),
+            'charset':'utf8'
+        }
+
+    def connect_db(self):
+        conn = pymysql.connect(
+            user=self.config['user'],
+            db=self.config['db'],
+            port=int(self.config['port']),
+            passwd=self.config['passwd'],
+            host=self.config['host'],
+            charset=self.config['charset']
+        )
+
+        return conn;
+        # if(isDict):
+        #     cursor = conn.cursor(pymysql.cursors.DictCursor);
+        # else :
+        #     cursor = conn.cursor();
+        # return cursor;
+
+    #datas attr type (list in dict): [{'key' : 'data'} ... ] 
+    def insert_value(self, datas) :
+        conn = self.connect_db();
+        cursor = conn.cursor(pymysql.cursors.DictCursor);
+        
+        if(len(datas)) :
+            sqlcmd = (
+                f"insert into `leg_notice_list` ({', '.join(datas[0].keys())}) "
+                f"values (%({')s, %('.join(datas[0].keys())})s) "
+                f"on duplicate key update "
+                f"cmnt_cnt = values(cmnt_cnt), status = values(status)"
+            )
+        
+        try :    
+            cursor.executemany(sqlcmd, datas);
+            conn.commit();
+        finally:
+            conn.close();
+            
+        return ;
 
 if __name__ == '__main__' :
-    sql = 'SELECT psort, pcode_name FROM PA.pa_code where pcode_group=26;';
     
-    db_conn = dbP2S.cursor();
+    config = db_config();
     
-    db_conn.execute(sql);
-    rows = db_conn.fetchall()
+    sql = 'select * from users'
+    conn = config.connect_db();
     
-    i=0;
-    for col in rows: 
-        i += 1
-        print(col)
-        if(i >= 100) :
-            break;
+    conn.execute(sql)
     
-    
+    rows = conn.fetchall();
+    print(rows);
