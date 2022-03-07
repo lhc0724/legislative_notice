@@ -13,6 +13,7 @@ class db_config:
             'host':os.environ.get('DB_HOST'),
             'charset':'utf8'
         }
+        #print(self.config);
 
     def connect_db(self):
         conn = pymysql.connect(
@@ -25,12 +26,7 @@ class db_config:
         )
 
         return conn;
-        # if(isDict):
-        #     cursor = conn.cursor(pymysql.cursors.DictCursor);
-        # else :
-        #     cursor = conn.cursor();
-        # return cursor;
-
+    
     #datas attr type (list in dict): [{'key' : 'data'} ... ] 
     def insert_list(self, datas) -> bool:
         conn = self.connect_db();
@@ -40,12 +36,12 @@ class db_config:
         
         if(len(datas)) :
             sqlcmd = (
-                f"insert into `leg_notice_list` ({', '.join(datas[0].keys())}) "
+                f"insert into `{os.environ.get('DB_TABLE')}` ({', '.join(datas[0].keys())}) "
                 f"values (%({')s, %('.join(datas[0].keys())})s) "
                 f"on duplicate key update "
                 f"cmnt_cnt = values(cmnt_cnt), status = values(status)"
             )
-        
+            # print(sqlcmd);
         try :    
             cursor.executemany(sqlcmd, datas);
             conn.commit();

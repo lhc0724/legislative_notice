@@ -13,7 +13,9 @@ def main() :
         return ;
     
     for i in range(1, proc_maxPg+1) :
-        conf.insert_list(notices.getListValue(i));
+        if conf.insert_list(notices.getListValue(i)) == False :
+            print('sql error');
+            break;
     
     return ;
 

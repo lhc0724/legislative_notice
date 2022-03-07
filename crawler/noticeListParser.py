@@ -196,7 +196,12 @@ class NoticeListParser:
         maxPg = max(pgVals);    #마지막 페이지값
 
         tblAttrs = soup.find_all('td', {'class': re.compile('left')});
-        print(tblAttrs);
+        #print(tblAttrs);
+        
+        htmlStrList = []
+        for item in tblAttrs:
+            htmlStrList.append(str(item));
+           # print(f'{item}\r\n')
         
         return soup;
     
@@ -205,5 +210,5 @@ class NoticeListParser:
 if __name__ == '__main__' :
     test = NoticeListParser();
     
-    result = test.getOpinionCnt(pgNum=1, isClosed=True, bill_id='PRC_O2Z2A0Y2S1E4Q1F1Y5U4L3H1S1B6B1');
+    result = test.getOpinionCnt(pgNum=1, isClosed=True, bill_id='PRC_Y2E2H0X2S2J4H1K4A2Z0E4A6M9H1U1');
     
